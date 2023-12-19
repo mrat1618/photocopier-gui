@@ -31,7 +31,7 @@ class ConfigWindow(QMainWindow):
         layout.addWidget(self.txt_folder)
         
         #xx
-        self.chk_overwrt = QCheckBox("Overwrite existing JPGs")
+        self.chk_overwrt = QCheckBox("Overwrite existing files")
         layout.addWidget(self.chk_overwrt)
         
         self.label2 = QLabel("RAW file types to copy")
