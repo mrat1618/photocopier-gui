@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget, QPushB
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 
+
 import utils.configs as cfg
 import utils.utils as utl
 
@@ -174,32 +175,23 @@ class MainWindow(QMainWindow):
         jpg_folder = self.drop1.folder_path
         raw_folder = self.drop2.folder_path
         
-        file_types = ['JPG', 'jpg']
-        jpg_list   = utl.search_files(file_types, jpg_folder)
+        self.worker = utl.FileCopyWorker(jpg_folder=jpg_folder, raw_folder=raw_folder)
+        self.worker.total_files_calculated.connect(self.set_progress_bar_max)
+        self.worker.progress_updated.connect(self.update_progress)
+        self.worker.finished.connect(self.copy_finished)
         
-        config = cfg.load_config()
-        # Filter out JPG image names
-        regex_pattern = config['Files']['regex']
-        cleaned_img_list = utl.clean_img_names(jpg_list, regex_pattern)
+        self.run_button.setEnabled(False)
+        self.worker.start()
         
-        # Identify RAW files to be copied
-        raw_types = utl.get_raw_types(config['Files']['raw_types'])
-        raw_files_list = utl.search_files(raw_types, raw_folder, cleaned_img_list)
-        
-        # Copy RAW files
-        num_files = len(raw_files_list)
-        src_fldr  = raw_folder
-        if config.getboolean('Img Location', 'custom_path'):
-            dest_fldr = config['Img Location']['folder_value']
-        else:
-            dest_fldr = f"{raw_folder}/{config['Img Location']['folder_value']}"
-        src_fldr = utl.convert_to_path(src_fldr)
-        dest_fldr= utl.convert_to_path(dest_fldr)
-        
-        for count, raw_file in enumerate(raw_files_list):
-            utl.cp(src_fldr/raw_file, dest_fldr/raw_file)
-            progress = 100*((1+count)/num_files)
-            self.progress_bar.setValue(progress)
+    def set_progress_bar_max(self, total_files):
+        self.progress_bar.setMaximum(total_files)
+
+    def update_progress(self, copied_files):
+        self.progress_bar.setValue(copied_files)
+
+    def copy_finished(self):
+        self.run_button.setEnabled(True)
+        self.progress_bar.setValue(self.progress_bar.maximum())
     
     def open_config_window(self):
         self.config_window = ConfigWindow()
